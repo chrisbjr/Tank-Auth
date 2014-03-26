@@ -1,4 +1,5 @@
-<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+<?php
+if (!defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
  * Users
@@ -10,18 +11,18 @@
  * @package	Tank_auth
  * @author	Ilya Konyukhov (http://konyukhov.com/soft/)
  */
-class Users extends CI_Model
-{
-	private $table_name			= 'users';			// user accounts
-	private $profile_table_name	= 'user_profiles';	// user profiles
+class Users extends CI_Model {
+
+	private $table_name = 'users';   // user accounts
+	private $profile_table_name = 'user_profiles'; // user profiles
 
 	function __construct()
 	{
 		parent::__construct();
 
-		$ci =& get_instance();
-		$this->table_name			= $ci->config->item('db_table_prefix', 'tank_auth').$this->table_name;
-		$this->profile_table_name	= $ci->config->item('db_table_prefix', 'tank_auth').$this->profile_table_name;
+		$ci = & get_instance();
+		$this->table_name = $ci->config->item('db_table_prefix', 'tank_auth') . $this->table_name;
+		$this->profile_table_name = $ci->config->item('db_table_prefix', 'tank_auth') . $this->profile_table_name;
 	}
 
 	/**
@@ -130,12 +131,68 @@ class Users extends CI_Model
 		$data['created'] = date('Y-m-d H:i:s');
 		$data['activated'] = $activated ? 1 : 0;
 
-		if ($this->db->insert($this->table_name, $data)) {
+		if (!array_key_exists('role_id', $data))
+		{
+			if ($this->admin_not_present())
+			{
+				$data['role_id'] = 1;
+			}
+			else
+			{
+				$data['role_id'] = $this->default_role();
+			}
+		}
+
+		if ($this->db->insert($this->table_name, $data))
+		{
 			$user_id = $this->db->insert_id();
-			if ($activated)	$this->create_profile($user_id);
+			if ($activated) $this->create_profile($user_id);
 			return array('user_id' => $user_id);
 		}
 		return NULL;
+	}
+
+	/**
+	 * Check if a user with admin role exists
+	 *
+	 * @return	bool
+	 */
+	function admin_not_present()
+	{
+		$this->db->where('role_id', 1);
+		if ($this->db->count_all_results($this->table_name) == 0)
+		{
+			return TRUE;
+		}
+		return FALSE;
+	}
+
+	/**
+	 * Get the default role for users
+	 *
+	 * @return	int
+	 */
+	function default_role()
+	{
+		$this->db->where('default', 1);
+		$query = $this->db->get('ta_roles');
+
+		$row = $query->row_array();
+		return $row['id'];
+	}
+
+	/**
+	 * Get role for role_id
+	 *
+	 * @return	string
+	 */
+	function get_role($role_id)
+	{
+		$this->db->where('id', $role_id);
+		$query = $this->db->get('ta_roles');
+
+		$row = $query->row_array();
+		return $row['role'];
 	}
 
 	/**
@@ -151,15 +208,19 @@ class Users extends CI_Model
 	{
 		$this->db->select('1', FALSE);
 		$this->db->where('id', $user_id);
-		if ($activate_by_email) {
+		if ($activate_by_email)
+		{
 			$this->db->where('new_email_key', $activation_key);
-		} else {
+		}
+		else
+		{
 			$this->db->where('new_password_key', $activation_key);
 		}
 		$this->db->where('activated', 0);
 		$query = $this->db->get($this->table_name);
 
-		if ($query->num_rows() == 1) {
+		if ($query->num_rows() == 1)
+		{
 
 			$this->db->set('activated', 1);
 			$this->db->set('new_email_key', NULL);
@@ -195,7 +256,8 @@ class Users extends CI_Model
 	{
 		$this->db->where('id', $user_id);
 		$this->db->delete($this->table_name);
-		if ($this->db->affected_rows() > 0) {
+		if ($this->db->affected_rows() > 0)
+		{
 			$this->delete_profile($user_id);
 			return TRUE;
 		}
@@ -331,8 +393,8 @@ class Users extends CI_Model
 		$this->db->set('new_password_key', NULL);
 		$this->db->set('new_password_requested', NULL);
 
-		if ($record_ip)		$this->db->set('last_ip', $this->input->ip_address());
-		if ($record_time)	$this->db->set('last_login', date('Y-m-d H:i:s'));
+		if ($record_ip) $this->db->set('last_ip', $this->input->ip_address());
+		if ($record_time) $this->db->set('last_login', date('Y-m-d H:i:s'));
 
 		$this->db->where('id', $user_id);
 		$this->db->update($this->table_name);
@@ -349,8 +411,8 @@ class Users extends CI_Model
 	{
 		$this->db->where('id', $user_id);
 		$this->db->update($this->table_name, array(
-			'banned'		=> 1,
-			'ban_reason'	=> $reason,
+			'banned' => 1,
+			'ban_reason' => $reason,
 		));
 	}
 
@@ -364,8 +426,8 @@ class Users extends CI_Model
 	{
 		$this->db->where('id', $user_id);
 		$this->db->update($this->table_name, array(
-			'banned'		=> 0,
-			'ban_reason'	=> NULL,
+			'banned' => 0,
+			'ban_reason' => NULL,
 		));
 	}
 
@@ -392,6 +454,7 @@ class Users extends CI_Model
 		$this->db->where('user_id', $user_id);
 		$this->db->delete($this->profile_table_name);
 	}
+
 }
 
 /* End of file users.php */
