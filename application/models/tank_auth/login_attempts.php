@@ -1,4 +1,5 @@
-<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
+<?php
+if (!defined('BASEPATH')) exit('No direct script access allowed');
 
 /**
  * Login_attempts
@@ -9,16 +10,16 @@
  * @package	Tank_auth
  * @author	Ilya Konyukhov (http://konyukhov.com/soft/)
  */
-class Login_attempts extends CI_Model
-{
+class Login_attempts extends CI_Model {
+
 	private $table_name = 'login_attempts';
 
 	function __construct()
 	{
 		parent::__construct();
 
-		$ci =& get_instance();
-		$this->table_name = $ci->config->item('db_table_prefix', 'tank_auth').$this->table_name;
+		$ci = & get_instance();
+		$this->table_name = $ci->config->item('db_table_prefix', 'tank_auth') . $this->table_name;
 	}
 
 	/**
@@ -68,6 +69,7 @@ class Login_attempts extends CI_Model
 
 		$this->db->delete($this->table_name);
 	}
+
 }
 
 /* End of file login_attempts.php */
